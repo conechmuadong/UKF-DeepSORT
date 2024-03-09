@@ -7,14 +7,14 @@ class FeatureExtractor:
 	def __init__(self, model):
 		self.model = model
 		self.interpreter = tf.lite.Interpreter(self.model)
-		_ , self.witdh, self.height, _ = self.interpreter.get_input_details()[0]['shape']
+		self.interpreter.allocate_tensors()
+		_ , self.width, self.height, _ = self.interpreter.get_input_details()[0]['shape']
 
-	def extract_feature(img):
+	def extract_feature(self, img):
 		img = Image.fromarray(img)
 
-		img = img.convert('RGB').resize(())
+		img = img.convert('RGB').resize((self.width, self.height))
 		input_tensor = self.interpreter.tensor(img)
-
 		self.interpreter.invoke()
 
 		output_details = self.interpreter.get_output_details()[0]

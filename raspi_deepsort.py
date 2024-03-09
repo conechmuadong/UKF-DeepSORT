@@ -1,4 +1,4 @@
-from __future__ import print_function, absolute_import
+from __future__ import absolute_import
 
 import cv2
 import numpy as np
@@ -6,22 +6,21 @@ import numpy as np
 import argparse
 
 from application_util import preprocessing
+from application_util import image_viewer
 from application_util import visualization
 from deep_sort import nn_matching
 from deep_sort.detection import Detection
 from deep_sort.tracker import Tracker
-from detect_module import Detect
+from tools.detect import Detector
 from tools.feature_extractor import FeatureExtractor
 
 def feature_extractor(detection_list, extractor, img):
 	extracted_list = []
 	for detection in detection_list:
-		bbox, category, confident = detection[0], detection[1], detection[2]
-		if(category != "person"):
-			continue
+		bbox, confidence = detection[0], detection[1]
 		ext_img = img[bbox[1]:bbox[1]+bbox[3], bbox[0]:bbox[0]+bbox[2]]
 		feature = extractor.extract_feature(ext_img)
-		extracted_list.append([bbox, feature, confident])
+		extracted_list.append([bbox, confidence, feature])
 	return extracted_list
 def create_detections(detection_list, min_height=0):
     """Create detections for given frame index from the raw detection matrix.
@@ -46,57 +45,59 @@ def create_detections(detection_list, min_height=0):
     """
     detections = []
     for detection in detection_list:
-        bbox, feature, confident = detection[0], detection[1], detection[2]
+        bbox, confidence ,feature = detection[0], detection[1], detection[2]
         if bbox[3] < min_height:
             continue
-        detections.append(Detection(bbox, confident, feature))
+        detections.append(Detection(bbox, confidence, feature))
     return detections
 
-def gather_detections(frame):
+def gather_detections(frame, detector):
 	frame = cv2.flip(frame, 1)
-	frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-	detection_list = Detect.predict(frame)
+	detection_list = detector.detect(frame)
 	return detection_list
 
-def draw_detections(image, detections):
-	vis = visualization.Visualization()
-	vis.set_image(image)
-	vis.draw_detections(detections)
-	image = vis.viewer.image
-	return image
+def draw_detections(viewer ,image, detections):
+	viewer.color = 0, 0, 255
+	viewer.thickness = 2
+	viewer.image = image
+	for i, detection in enumerate(detections):
+		viewer.rectangle(*detection.tlwh)
+	return viewer.image
 
-def draw_tracks(image, tracks):
-	vis = visualization.Visualization()
-	vis.set_image(image)
-	vis.draw_trackers(tracks)
-	image = vis.viewer.image
-	return image
+def draw_tracks(viewer ,image, tracks):
+	viewer.image = image
+	viewer.thickness = 2
+	for track in tracks:
+		if not track.is_confirmed() or track.time_since_update > 0:
+			continue
+		viewer.color = visualization.create_unique_color_uchar(track.track_id)
+		viewer.rectangle(*track.to_tlwh().astype(np.int32), label=str(track.track_id))
+	return viewer.image
 
 def run(output_file, min_confidence, extractor, detector,
         nms_max_overlap, min_detection_height, max_cosine_distance,
         nn_budget):
 	extractor = FeatureExtractor(extractor)
-	Detect.config(detector, min_confidence)
+	detector = Detector(detector, min_confidence, min_detection_height)
 	metric = nn_matching.NearestNeighborDistanceMetric(
 		"cosine", max_cosine_distance, nn_budget)
 	tracker = Tracker(metric)
-
-	
+	viewer = image_viewer.ImageViewer(60)
 	cap = cv2.VideoCapture(0)
 	cap.set(cv2.CAP_PROP_FRAME_WIDTH, 224)
 	cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 224)
 	fourcc = cv2.VideoWriter_fourcc(*'XVID')
 	out = cv2.VideoWriter('output.avi',fourcc, 5, (224,224))
-	
+
 	frame_counter = 0
-	while cap.isOpened() and frame_counter < 1000:
+	while cap.isOpened() and frame_counter < 100:
 		ret, frame = cap.read()
 		if not ret:
 			break
-		detection_list = gather_detections(frame)
+		detection_list = detector.detect(frame)
 		detection_list = feature_extractor(detection_list, extractor, frame)
 		detections = create_detections(detection_list, min_detection_height)
-		
+
 		boxes = np.array([d.tlwh for d in detections])
 		scores = np.array([d.confidence for d in detections])
 		indices = preprocessing.non_max_suppression(
@@ -106,15 +107,14 @@ def run(output_file, min_confidence, extractor, detector,
 		tracker.predict()
 		tracker.update(detections)
 
-		frame = draw_detections(frame, detections)
-		frame = draw_tracks(frame, tracker.tracks)
+		frame = draw_detections(viewer, frame, detections)
+		frame = draw_tracks(viewer, frame, tracker.tracks)
 
 		frame_counter += 1
-		out.write(frame) 
-		if cv2.waitKey(0) == 27: 
+		out.write(frame)
+		if cv2.waitKey(0) == 27:
 			break
-	cv2.destroyAllWindows() 
-	out.release() 
+	out.release()
 	cap.release()
 
 def parse_args():
@@ -128,7 +128,7 @@ def parse_args():
 		default="resources/networks/mars-small128.tflite")
 	parser.add_argument(
 		"--detector", help="Path to the object detector model", type=str, 
-		default="resources/networks/mobilenetv2ssd.tflite")
+		default="resources/networks/mobilenetssdv2.tflite")
 	parser.add_argument(
 		"--nms_max_overlap", help="Non-maxima suppression maximum overlap", type=float, default=0.5)
 	parser.add_argument(
