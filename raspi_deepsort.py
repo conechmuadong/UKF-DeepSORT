@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 from __future__ import absolute_import
+=======
+from __future__ import print_function, absolute_import
+>>>>>>> origin/main
 
 import cv2
 import numpy as np

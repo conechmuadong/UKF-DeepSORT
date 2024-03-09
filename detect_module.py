@@ -2,6 +2,8 @@ from tflite_support.task import core
 from tflite_support.task import processor
 from tflite_support.task import vision
 
+import numpy as np
+
 class Detect:
 
     def __new__(cls):
@@ -24,10 +26,18 @@ class Detect:
         detection_result = cls.detector.detect(input_tensor)
         result = []
         for detection in detection_result.detections:
+<<<<<<< HEAD
 		bbox = detection.bounding_box
 		category = detection.categories[0]
 		category_name, score = category.category_name, category.score
 		bbox = np.array([bbox.origin_x, bbox.origin_y, bbox.width, bbox.height])
 		result.append([bbox, category_name, score])
+=======
+            bbox = detection.bounding_box
+            category = detection.categories[0]
+            category_name, score = category.category_name, category.score
+            bbox = np.array([bbox.origin_x, bbox.origin_y, bbox.width, bbox.height])
+            result.append([bbox, category_name, score])
+>>>>>>> origin/main
         return result
 
