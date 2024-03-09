@@ -17,7 +17,7 @@ class FeatureExtractor:
 
 		self.interpreter.invoke()
 
-		output_details = interpreter.get_output_details()[0]
-		output = np.squeeze(interpreter.get_tensor(output_details['index']))
+		output_details = self.interpreter.get_output_details()[0]
+		output = np.squeeze(self.interpreter.get_tensor(output_details['index']))
 
 		return output
