@@ -7,8 +7,7 @@ class Detect:
     def __new__(cls):
         """ Prevent object initialization. """
         raise Exception(f"{cls.__name__} object cannot be initialized")
-    @classmethod
-    
+    @classmethod    
     def config(cls,model: str,  num_threads=5, enable_edgetpu=True, score_threshold=0.3) -> None:
         """ Initialize the object detection model. """
 
@@ -25,10 +24,10 @@ class Detect:
         detection_result = cls.detector.detect(input_tensor)
         result = []
         for detection in detection_result.detections:
-            bbox = detection.bounding_box
-            category = detection.categories[0]
-            category_name, score = category.category_name, category.score
-	    bbox = np.array([bbox.origin_x, bbox.origin_y, bbox.width, bbox.height])
-            result.append([bbox, category_name, score])
+		bbox = detection.bounding_box
+		category = detection.categories[0]
+		category_name, score = category.category_name, category.score
+		bbox = np.array([bbox.origin_x, bbox.origin_y, bbox.width, bbox.height])
+		result.append([bbox, category_name, score])
         return result
 

@@ -1,4 +1,4 @@
-from __future__ import divison, print_function, absolute_import
+from __future__ import absolute_import
 
 import cv2
 import numpy as np
@@ -89,7 +89,7 @@ def run(output_file, min_confidence, extractor, detector,
 	out = cv2.VideoWriter('output.avi',fourcc, 5, (224,224))
 	
 	frame_counter = 0
-	while cap.isOpened() and frame_counter < 1000:
+	while cap.isOpened() and frame_counter < 100:
 		ret, frame = cap.read()
 		if not ret:
 			break
@@ -128,7 +128,7 @@ def parse_args():
 		default="resources/networks/mars-small128.tflite")
 	parser.add_argument(
 		"--detector", help="Path to the object detector model", type=str, 
-		default="resources/networks/mobilenetv2ssd.tflite")
+		default="resources/networks/mobilenetssdv2.tflite")
 	parser.add_argument(
 		"--nms_max_overlap", help="Non-maxima suppression maximum overlap", type=float, default=0.5)
 	parser.add_argument(
