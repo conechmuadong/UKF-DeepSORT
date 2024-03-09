@@ -3,12 +3,15 @@ from __future__ import divison, print_function, absolute_import
 import cv2
 import numpy as np
 
+import argparse
+
 from application_util import preprocessing
 from application_util import visualization
 from deep_sort import nn_matching
 from deep_sort.detection import Detection
 from deep_sort.tracker import Tracker
 from detect_module import Detect
+from tools.feature_extractor import FeatureExtractor
 
 def feature_extractor(detection_list, extractor, img):
 	extracted_list = []
@@ -46,14 +49,28 @@ def create_detections(detection_list, min_height=0):
         bbox, feature, confident = detection[0], detection[1], detection[2]
         if bbox[3] < min_height:
             continue
-        detection_list.append(Detection(bbox, confident, feature))
-    return detection_list
+        detections.append(Detection(bbox, confident, feature))
+    return detections
 
 def gather_detections(frame):
 	frame = cv2.flip(frame, 1)
 	frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 	detection_list = Detect.predict(frame)
 	return detection_list
+
+def draw_detections(image, detections):
+	vis = visualization.Visualization()
+	vis.set_image(image)
+	vis.draw_detections(detections)
+	image = vis.viewer.image
+	return image
+
+def draw_tracks(image, tracks):
+	vis = visualization.Visualization()
+	vis.set_image(image)
+	vis.draw_trackers(tracks)
+	image = vis.viewer.image
+	return image
 
 def run(output_file, min_confidence, extractor, detector,
         nms_max_overlap, min_detection_height, max_cosine_distance,
@@ -78,8 +95,20 @@ def run(output_file, min_confidence, extractor, detector,
 			break
 		detection_list = gather_detections(frame)
 		detection_list = feature_extractor(detection_list, extractor, frame)
-
+		detections = create_detections(detection_list, min_detection_height)
 		
+		boxes = np.array([d.tlwh for d in detections])
+		scores = np.array([d.confidence for d in detections])
+		indices = preprocessing.non_max_suppression(
+			boxes, nms_max_overlap, scores)
+		detections = [detections[i] for i in indices]
+
+		tracker.predict()
+		tracker.update(detections)
+
+		frame = draw_detections(frame, detections)
+		frame = draw_tracks(frame, tracker.tracks)
+
 		frame_counter += 1
 		out.write(frame) 
 		if cv2.waitKey(0) == 27: 
@@ -88,44 +117,30 @@ def run(output_file, min_confidence, extractor, detector,
 	out.release() 
 	cap.release()
 
-		
-def draw_detections(image, detection_list) -> np.ndarray:
-	_MARGIN = 10
-	_ROW_SIZE = 10
-	_FONT_SIZE = 1
-	_FONT_THICKNESS = 1
-	_TEXT_COLOR = (0, 0, 255)  # red
-	for detection in detection_list:
-		# Draw bounding box
-		bbox, feature, confident = detection[0], detection[1], detection[2]
-		start_point = bbox[1], bbox[1]+bbox[3]
-		end_point = bbox[0], bbox[0]+bbox[2]
-		cv2.rectangle(image, start_point, end_point, _TEXT_COLOR, 3)
+def parse_args():
+	parser = argparse.ArgumentParser(description="Run deep sort on Raspberry Pi 4")
+	parser.add_argument(
+		"--output_file", help="Path to save the output video file", type=str, default="output.avi")
+	parser.add_argument(
+		"--min_confidence", help="Minimum confidence score for detections", type=float, default=0.3)
+	parser.add_argument(
+		"--extractor", help="Path to the feature extractor model", type=str, 
+		default="resources/networks/mars-small128.tflite")
+	parser.add_argument(
+		"--detector", help="Path to the object detector model", type=str, 
+		default="resources/networks/mobilenetv2ssd.tflite")
+	parser.add_argument(
+		"--nms_max_overlap", help="Non-maxima suppression maximum overlap", type=float, default=0.5)
+	parser.add_argument(
+		"--min_detection_height", help="Minimum detection bounding box height", type=int, default=0)
+	parser.add_argument(
+		"--max_cosine_distance", help="Maximum cosine distance", type=float, default=0.2)
+	parser.add_argument(
+		"--nn_budget", help="Nearest neighbor budget", type=int, default=100)
+	return parser.parse_args()
 
-		# Draw confidence
-		confident = round(confident, 2)
-		text_location = (_MARGIN + bbox[0],
-						_MARGIN + _ROW_SIZE + bbox[1])
-		cv2.putText(image, confident, text_location, cv2.FONT_HERSHEY_PLAIN,
-					_FONT_SIZE, _TEXT_COLOR, _FONT_THICKNESS)
-	return image
-
-def draw_tracks(image, tracks):
-	_MARGIN = 10
-	_ROW_SIZE = 10
-	_FONT_SIZE = 1
-	_FONT_THICKNESS = 1
-	_TEXT_COLOR = (0, 0, 255)  # blue
-	for track in tracks:
-		# Draw bounding_box
-		bbox, id = track.to_tlbr(), track.track_id
-		start_point = bbox[1], bbox[1]+bbox[3]
-		end_point = bbox[0], bbox[0]+bbox[2]
-		cv2.rectangle(image, start_point, end_point, _TEXT_COLOR, 3)
-
-		# Draw id
-		text_location = (_MARGIN + bbox[0],
-						_MARGIN + _ROW_SIZE + bbox[1])
-		cv2.putText(image, id, text_location, cv2.FONT_HERSHEY_PLAIN,
-					_FONT_SIZE, _TEXT_COLOR, _FONT_THICKNESS)
-	return image
+if __name__ == "__main__":
+	args = parse_args()
+	run(args.output_file, args.min_confidence, args.extractor, args.detector,
+		args.nms_max_overlap, args.min_detection_height, args.max_cosine_distance,
+		args.nn_budget)
