@@ -4,7 +4,7 @@ import numpy as np
 from tensorflow.lite.python.interpreter import Interpreter
 
 class Detector:
-	def __init__(self, modelpath, min_confidence=0.3, min_height=0):
+	def __init__(self, modelpath, min_confidence=0.15, min_height=0):
 		self.min_confidence = min_confidence
 		self.min_height = min_height
 		self.interpreter = Interpreter(model_path=modelpath)

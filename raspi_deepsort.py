@@ -120,7 +120,7 @@ def run(output_file, min_confidence, extractor, detector,
 def parse_args():
 	parser = argparse.ArgumentParser(description="Run deep sort on Raspberry Pi 4")
 	parser.add_argument(
-		"--output_file", help="Path to save the output video file", type=str, default="output.avi")
+		"--output_video", help="Path to save the output video file", type=str, default="output.avi")
 	parser.add_argument(
 		"--min_confidence", help="Minimum confidence score for detections", type=float, default=0.3)
 	parser.add_argument(
