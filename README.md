@@ -1,7 +1,7 @@
 # UKF-DeepSORT
 
 ## Introduction
- This repository contains code for a DeepSORT-based Object Tracking using Unscented Kalman Filter with CTRV motion model. We extent the original DeepSORT algorithm for using the UKF and provide a efficient implementation on Raspberry Pi 4 Module B.
+ This repository contains code for a DeepSORT-based Object Tracking using Unscented Kalman Filter with CTRV motion model. We extent the original DeepSORT algorithm for using the UKF and provide an efficient implementation on Raspberry Pi 4 Module B.
 
 ## Dependencies
 
@@ -19,7 +19,7 @@ First, clone the repository:
 git clone https://github.com/conechmuadong/UKF-DeepSORT
 ```
 
-For evaluation on MOT16 with out running on Raspberry Pi, download pre-generated detections and the CNN checkpiont file from [here]((https://drive.google.com/open?id=18fKzfqnqhqW3s9zwsCbnVJ5XF2JFeqMp)).
+For evaluation on MOT16 without running on Raspberry Pi, download pre-generated detections and the CNN checkpoint file from [here]((https://drive.google.com/open?id=18fKzfqnqhqW3s9zwsCbnVJ5XF2JFeqMp)).
 
 *NOTE:* 
 - The candidate object locations of pre-generated detections are
@@ -29,7 +29,7 @@ taken from the following paper:
     F. Yu, W. Li, Q. Li, Y. Liu, X. Shi, J. Yan. POI: Multiple Object Tracking with High Performance Detection and Appearance Feature. In BMTT, SenseTime Group Limited, 2016.
     ```
 
-- The pre-generated feature vector are taken from DeepSORT:
+- The pre-generated feature vectors are taken from DeepSORT:
     ```
     Wojke, N., Bewley, A. and Paulus, D. (2017) ‘Simple online and realtime tracking with a Deep Association metric’, 2017 IEEE International Conference on Image Processing (ICIP) [Preprint]. doi:10.1109/icip.2017.8296962. 
     ```
@@ -53,7 +53,7 @@ For evaluation on MOT16 and running on Raspberry Pi, download pre-generated dete
         --nn_budget=100 \
         --display=True
     ```
-    Check `python deep_sort_app.py -h` for an overview of available options.There are also scripts in the repository to visualize results, generate videos, and evaluate the MOT challenge benchmark.
+    Check `python deep_sort_app.py -h` for an overview of available options. The repository also has scripts to visualize results, generate videos, and evaluate the MOT challenge benchmark.
 
 - On Raspberry Pi:    
     The following example starts the tracker for the video captured from webcam connected to the Raspberry Pi:
@@ -67,7 +67,7 @@ For evaluation on MOT16 and running on Raspberry Pi, download pre-generated dete
     ```
     Check `python raspi_deepsort.py -h` for an overview of available options.
 
-## Highlevel overview of source files
+## High-level overview of source files
 
 In the top-level directory are executable scripts to execute, evaluate, and
 visualize the tracker. The main entry point is in `deep_sort_app.py`, runs the tracker on a MOTChallenge sequence. `raspi_deepsort.py` runs the tracker on Raspberry Pi's Webcam's captured video.  
